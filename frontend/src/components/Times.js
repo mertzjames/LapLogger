@@ -4,6 +4,7 @@ import { timesAPI } from '../services/api';
 function Times() {
   const [times, setTimes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
@@ -12,10 +13,13 @@ function Times() {
 
   const fetchTimes = async () => {
     try {
+      setError(null);
       const response = await timesAPI.getAll();
-      setTimes(response.data);
+      setTimes(response.data || []);
     } catch (error) {
       console.error('Error fetching times:', error);
+      setError('Failed to load times. Please check if the backend server is running.');
+      setTimes([]);
     } finally {
       setLoading(false);
     }
@@ -30,6 +34,23 @@ function Times() {
 
   if (loading) {
     return <div className="card">Loading times...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="card">
+        <h1>Times</h1>
+        <div style={{ color: '#e74c3c', marginBottom: '1rem' }}>
+          <strong>Error:</strong> {error}
+        </div>
+        <button 
+          className="btn btn-primary" 
+          onClick={fetchTimes}
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -50,8 +71,27 @@ function Times() {
           </select>
         </div>
 
-        {filteredTimes.length === 0 ? (
-          <p>No times found. <a href="/add-time">Log your first time!</a></p>
+        {times.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <p style={{ fontSize: '1.1rem', color: '#7f8c8d', marginBottom: '1rem' }}>
+              No swim times have been logged yet.
+            </p>
+            <p style={{ marginBottom: '1rem' }}>
+              Start tracking performance by logging your first swim time!
+            </p>
+            <a href="/add-time" className="btn btn-primary">
+              Log First Time
+            </a>
+          </div>
+        ) : filteredTimes.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <p style={{ fontSize: '1.1rem', color: '#7f8c8d', marginBottom: '1rem' }}>
+              No times match the selected filter.
+            </p>
+            <p style={{ marginBottom: '1rem' }}>
+              Try changing the filter or <a href="/add-time">log a new time</a>.
+            </p>
+          </div>
         ) : (
           <div>
             <p>Showing {filteredTimes.length} of {times.length} times</p>

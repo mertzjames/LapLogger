@@ -5,7 +5,7 @@ echo "Starting LapLogger..."
 
 # Start backend in background
 echo "Starting Go backend on :8080..."
-cd backend && go run . &
+cd backend/ && go run . &
 BACKEND_PID=$!
 
 # Wait a bit for backend to start
@@ -13,7 +13,7 @@ sleep 3
 
 # Start frontend
 echo "Starting React frontend on :3000..."
-cd ../frontend && npm start &
+cd frontend/ && npm start &
 FRONTEND_PID=$!
 
 echo "✅ LapLogger is running!"

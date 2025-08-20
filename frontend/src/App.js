@@ -1,18 +1,24 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import PrivateRoute from './components/PrivateRoute';
+import Login from './components/Login';
+import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import Swimmers from './components/Swimmers';
 import Times from './components/Times';
 import AddTime from './components/AddTime';
 
-function App() {
+function AppContent() {
+  const { user, logout, isAuthenticated } = useAuth();
+
   return (
-    <Router>
-      <div className="App">
-        <nav className="navbar">
-          <div className="nav-container">
-            <h1 className="nav-title">LapLogger</h1>
+    <div className="App">
+      <nav className="navbar">
+        <div className="nav-container">
+          <h1 className="nav-title">LapLogger</h1>
+          {isAuthenticated && (
             <ul className="nav-menu">
               <li className="nav-item">
                 <Link to="/" className="nav-link">Dashboard</Link>
@@ -27,18 +33,52 @@ function App() {
                 <Link to="/add-time" className="nav-link">Log Time</Link>
               </li>
             </ul>
-          </div>
-        </nav>
+          )}
+          {isAuthenticated && (
+            <div className="nav-user">
+              <span className="nav-username">Welcome, {user?.username}</span>
+              <button onClick={logout} className="nav-logout">Logout</button>
+            </div>
+          )}
+        </div>
+      </nav>
 
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/swimmers" element={<Swimmers />} />
-            <Route path="/times" element={<Times />} />
-            <Route path="/add-time" element={<AddTime />} />
-          </Routes>
-        </main>
-      </div>
+      <main className="main-content">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/" element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          } />
+          <Route path="/swimmers" element={
+            <PrivateRoute>
+              <Swimmers />
+            </PrivateRoute>
+          } />
+          <Route path="/times" element={
+            <PrivateRoute>
+              <Times />
+            </PrivateRoute>
+          } />
+          <Route path="/add-time" element={
+            <PrivateRoute>
+              <AddTime />
+            </PrivateRoute>
+          } />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </Router>
   );
 }

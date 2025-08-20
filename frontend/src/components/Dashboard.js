@@ -8,35 +8,55 @@ function Dashboard() {
     recentTimes: [],
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [swimmersResponse, timesResponse] = await Promise.all([
-          swimmersAPI.getAll(),
-          timesAPI.getAll(),
-        ]);
-
-        const swimmers = swimmersResponse.data;
-        const times = timesResponse.data;
-
-        setStats({
-          totalSwimmers: swimmers.length,
-          totalTimes: times.length,
-          recentTimes: times.slice(0, 5),
-        });
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
+  const fetchData = async () => {
+    try {
+      setError(null);
+      const [swimmersResponse, timesResponse] = await Promise.all([
+        swimmersAPI.getAll(),
+        timesAPI.getAll(),
+      ]);
+
+      const swimmers = swimmersResponse.data || [];
+      const times = timesResponse.data || [];
+
+      setStats({
+        totalSwimmers: swimmers.length,
+        totalTimes: times.length,
+        recentTimes: times.slice(0, 5),
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setError('Failed to load dashboard data. Please check if the backend server is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return <div className="card">Loading dashboard...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="card">
+        <h1>Dashboard</h1>
+        <div style={{ color: '#e74c3c', marginBottom: '1rem' }}>
+          <strong>Error:</strong> {error}
+        </div>
+        <button 
+          className="btn btn-primary" 
+          onClick={fetchData}
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   return (

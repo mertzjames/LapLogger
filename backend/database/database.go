@@ -26,6 +26,16 @@ func InitDB() (*sql.DB, error) {
 
 func createTables(db *sql.DB) error {
 	queries := []string{
+		// Users table
+		`CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			username TEXT NOT NULL UNIQUE,
+			email TEXT NOT NULL UNIQUE,
+			password_hash TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+
 		// Swimmers table
 		`CREATE TABLE IF NOT EXISTS swimmers (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -119,7 +129,7 @@ func seedData(db *sql.DB) error {
 	// Seed strokes
 	strokes := []string{
 		"Freestyle",
-		"Backstroke", 
+		"Backstroke",
 		"Breaststroke",
 		"Butterfly",
 		"Individual Medley",
@@ -168,7 +178,7 @@ func seedData(db *sql.DB) error {
 		eventName := fmt.Sprintf("%dm %s", event.distance, event.strokeName)
 
 		// Insert event
-		_, err = db.Exec("INSERT INTO events (stroke_id, distance, name) VALUES (?, ?, ?)", 
+		_, err = db.Exec("INSERT INTO events (stroke_id, distance, name) VALUES (?, ?, ?)",
 			strokeID, event.distance, eventName)
 		if err != nil {
 			return err

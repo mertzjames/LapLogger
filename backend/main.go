@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 
 	"laplogger/database"
 	"laplogger/handlers"
+	"laplogger/middleware"
 	"laplogger/models"
 )
 
@@ -25,7 +27,15 @@ func main() {
 	defer db.Close()
 	globalDB = db
 
+	// Get JWT secret from environment or use default
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "your-secret-key-change-this-in-production"
+		log.Println("Warning: Using default JWT secret. Set JWT_SECRET environment variable in production.")
+	}
+
 	// Create handlers
+	authHandler := handlers.NewAuthHandler(db, jwtSecret)
 	swimmerHandler := handlers.NewSwimmerHandler(db)
 	timeHandler := handlers.NewTimeHandler(db)
 
@@ -35,19 +45,27 @@ func main() {
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
 
+	// Public routes (no authentication required)
+	api.HandleFunc("/auth/register", authHandler.Register).Methods("POST")
+	api.HandleFunc("/auth/login", authHandler.Login).Methods("POST")
+
+	// Protected routes (authentication required)
+	protected := api.PathPrefix("").Subrouter()
+	protected.Use(middleware.JWTMiddleware(authHandler))
+
 	// Swimmer routes
-	api.HandleFunc("/swimmers", swimmerHandler.GetSwimmers).Methods("GET")
-	api.HandleFunc("/swimmers", swimmerHandler.CreateSwimmer).Methods("POST")
-	api.HandleFunc("/swimmers/{id}", swimmerHandler.GetSwimmer).Methods("GET")
+	protected.HandleFunc("/swimmers", swimmerHandler.GetSwimmers).Methods("GET")
+	protected.HandleFunc("/swimmers", swimmerHandler.CreateSwimmer).Methods("POST")
+	protected.HandleFunc("/swimmers/{id}", swimmerHandler.GetSwimmer).Methods("GET")
 
 	// Time routes
-	api.HandleFunc("/times", timeHandler.CreateTime).Methods("POST")
-	api.HandleFunc("/times/{swimmer_id}", timeHandler.GetTimesBySwimmer).Methods("GET")
-	api.HandleFunc("/times", timeHandler.GetAllTimes).Methods("GET")
+	protected.HandleFunc("/times", timeHandler.CreateTime).Methods("POST")
+	protected.HandleFunc("/times/{swimmer_id}", timeHandler.GetTimesBySwimmer).Methods("GET")
+	protected.HandleFunc("/times", timeHandler.GetAllTimes).Methods("GET")
 
 	// Static data routes
-	api.HandleFunc("/strokes", getStrokes).Methods("GET")
-	api.HandleFunc("/events", getEvents).Methods("GET")
+	protected.HandleFunc("/strokes", getStrokes).Methods("GET")
+	protected.HandleFunc("/events", getEvents).Methods("GET")
 
 	// CORS setup
 	c := cors.New(cors.Options{

@@ -4,11 +4,12 @@ A comprehensive swim timing tracker application for monitoring stroke performanc
 
 ## Features
 
+- **User Authentication**: Secure user registration and login with JWT tokens
 - Track multiple swimming strokes (Freestyle, Backstroke, Breaststroke, Butterfly)
 - Support for various swimming events (50m, 100m, 200m, etc.)
 - Time logging and performance analytics
 - Clean, responsive web interface
-- RESTful API backend
+- RESTful API backend with protected routes
 
 ## Tech Stack
 

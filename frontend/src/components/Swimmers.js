@@ -4,7 +4,9 @@ import { swimmersAPI } from '../services/api';
 function Swimmers() {
   const [swimmers, setSwimmers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -16,10 +18,13 @@ function Swimmers() {
 
   const fetchSwimmers = async () => {
     try {
+      setError(null);
       const response = await swimmersAPI.getAll();
-      setSwimmers(response.data);
+      setSwimmers(response.data || []);
     } catch (error) {
       console.error('Error fetching swimmers:', error);
+      setError('Failed to load swimmers. Please check if the backend server is running.');
+      setSwimmers([]);
     } finally {
       setLoading(false);
     }
@@ -27,13 +32,18 @@ function Swimmers() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       await swimmersAPI.create(formData);
       setFormData({ name: '', email: '' });
       setShowForm(false);
       fetchSwimmers();
+      alert('Swimmer added successfully!');
     } catch (error) {
       console.error('Error creating swimmer:', error);
+      alert('Failed to add swimmer. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -48,6 +58,23 @@ function Swimmers() {
     return <div className="card">Loading swimmers...</div>;
   }
 
+  if (error) {
+    return (
+      <div className="card">
+        <h1>Swimmers</h1>
+        <div style={{ color: '#e74c3c', marginBottom: '1rem' }}>
+          <strong>Error:</strong> {error}
+        </div>
+        <button 
+          className="btn btn-primary" 
+          onClick={fetchSwimmers}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="card">
@@ -56,6 +83,7 @@ function Swimmers() {
           <button 
             className="btn btn-primary"
             onClick={() => setShowForm(!showForm)}
+            disabled={submitting}
           >
             {showForm ? 'Cancel' : 'Add Swimmer'}
           </button>
@@ -64,13 +92,14 @@ function Swimmers() {
         {showForm && (
           <form onSubmit={handleSubmit} style={{ marginTop: '1rem' }}>
             <div className="form-group">
-              <label>Name</label>
+              <label>Name *</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
                 required
+                placeholder="Enter swimmer's name"
               />
             </div>
             <div className="form-group">
@@ -80,10 +109,15 @@ function Swimmers() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
+                placeholder="Enter swimmer's email"
               />
             </div>
-            <button type="submit" className="btn btn-success">
-              Add Swimmer
+            <button 
+              type="submit" 
+              className="btn btn-success"
+              disabled={submitting}
+            >
+              {submitting ? 'Adding...' : 'Add Swimmer'}
             </button>
           </form>
         )}
@@ -92,7 +126,20 @@ function Swimmers() {
       <div className="card">
         <h2>All Swimmers ({swimmers.length})</h2>
         {swimmers.length === 0 ? (
-          <p>No swimmers added yet.</p>
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <p style={{ fontSize: '1.1rem', color: '#7f8c8d', marginBottom: '1rem' }}>
+              No swimmers have been added yet.
+            </p>
+            <p style={{ marginBottom: '1rem' }}>
+              Add your first swimmer to start tracking swim times!
+            </p>
+            <button 
+              className="btn btn-primary"
+              onClick={() => setShowForm(true)}
+            >
+              Add First Swimmer
+            </button>
+          </div>
         ) : (
           <table className="table">
             <thead>

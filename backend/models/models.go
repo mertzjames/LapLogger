@@ -5,6 +5,16 @@ import (
 	"time"
 )
 
+// User represents a user in the system with authentication
+type User struct {
+	ID           int       `json:"id" db:"id"`
+	Username     string    `json:"username" db:"username"`
+	Email        string    `json:"email" db:"email"`
+	PasswordHash string    `json:"-" db:"password_hash"` // Don't include in JSON responses
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
+}
+
 // Swimmer represents a swimmer in the system
 type Swimmer struct {
 	ID        int       `json:"id" db:"id"`
@@ -28,7 +38,7 @@ type Event struct {
 	ID       int    `json:"id" db:"id"`
 	StrokeID int    `json:"stroke_id" db:"stroke_id"`
 	Distance int    `json:"distance" db:"distance"` // Distance in meters
-	Name     string `json:"name" db:"name"`          // e.g., "50m Freestyle"
+	Name     string `json:"name" db:"name"`         // e.g., "50m Freestyle"
 }
 
 // EventWithDetails includes stroke information for display
@@ -131,4 +141,25 @@ func (st *SwimTime) FormatTime() string {
 // GenerateEventName creates a descriptive name for an event
 func (e *Event) GenerateEventName(strokeName string) string {
 	return fmt.Sprintf("%dm %s", e.Distance, strokeName)
+}
+
+// Authentication request/response types
+type RegisterRequest struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type AuthResponse struct {
+	Token string `json:"token"`
+	User  User   `json:"user"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
 }

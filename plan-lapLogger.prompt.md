@@ -40,6 +40,28 @@ League (tenant) ──► Teams ──► Swimmers
 **Control Plane DB** (`laplogger_control`): `users`, `leagues`, `league_memberships`
 **Tenant DB** (`laplogger_league_<uuid>`): `teams`, `swimmers`, `meets`, `events`, `times`
 
+### Data Model Detail
+
+**Control Plane** (`laplogger_control`)
+| Table | Key Fields |
+|---|---|
+| `users` | `id (UUID)`, `google_id`, `email`, `name`, `created_at` |
+| `leagues` | `id (UUID)`, `name`, `slug (unique)`, `db_name`, `created_at` |
+| `league_memberships` | `user_id`, `league_id`, `role (admin)`, `joined_at` |
+
+**Tenant DB** (`laplogger_league_<uuid>`)
+| Table | Key Fields |
+|---|---|
+| `teams` | `id (UUID)`, `name`, `short_name`, `created_at` |
+| `swimmers` | `id (UUID)`, `team_id (FK)`, `first_name`, `last_name`, `date_of_birth`, `gender (M/F)`, `created_at` |
+| `meets` | `id (UUID)`, `name`, `location`, `date`, `is_public`, `created_at` |
+| `events` | `id (UUID)`, `meet_id (FK)`, `stroke`, `distance`, `unit (yards/meters)`, `gender (M/F/X)`, `age_group`, `is_custom`, `custom_name`, `sort_order` |
+| `times` | `id (UUID)`, `event_id (FK)`, `swimmer_id (FK)`, `time_hundredths (INT)`, `is_exhibition`, `created_at` |
+
+**Swim events**: Standard preset strokes (`Free`, `Back`, `Breast`, `Fly`, `IM`) × standard distances (`25`, `50`, `100`, `200`, `400`, `500`, `1650`) plus custom events defined by coaches.
+**Age groups**: `8&U`, `9-10`, `11-12`, `13-14`, `15-18`, `Open` — derived from `swimmers.date_of_birth` relative to `meets.date`.
+**Gender**: Events are gendered (`M`, `F`, or `X` for mixed). Separate results per gender.
+
 ---
 
 ## Steps
@@ -109,17 +131,33 @@ League (tenant) ──► Teams ──► Swimmers
 
 ---
 
-## Decisions & Scope Boundaries
-- **In scope**: Auth, league/team/swimmer/meet/event/time CRUD, public results page
-- **Out of scope (Phase 2)**: Stripe billing, coach/viewer roles, relay events, split times, push notifications, native mobile
+## Locked Decisions
+
+| # | Decision | Choice | Rationale |
+|---|---|---|---|
+| D1 | Go web framework | **Gin** | Mature middleware ecosystem, structured route groups for tenant isolation |
+| D2 | Go module path | `github.com/laplogger/laplogger` | Neutral placeholder; change anytime in `go.mod` |
+| D3 | Frontend bundler | **Vite** | CRA unmaintained; Vite is the modern standard |
+| D4 | JWT signing | **HS256** shared secret | Simplest for monolith; RS256 only needed for multi-service validation |
+| D5 | Time storage | **Hundredths of a second** as `INTEGER` | Swim timing precision is hundredths; `8345` = `1:23.45` |
+| D6 | Migration tool | **golang-migrate** with embedded SQL files | Lightweight, no ORM, version-controllable |
+| D7 | Dev ports | Backend `:8080`, Vite `:5173`, Postgres `:5432`, Nginx `:80` | Standard defaults |
+| D8 | Event model | Standard presets + custom events | Covers competitive meets and coach-defined events |
+| D9 | Age groups | Derived from `date_of_birth` vs `meet.date` | `8&U`, `9-10`, `11-12`, `13-14`, `15-18`, `Open` |
+| D10 | Gender | Events are gendered (`M`/`F`/`X`) | Separate results per gender |
+| D11 | Google OAuth | **Placeholder credentials** for now | User will configure real credentials later |
+
+---
+
+## Scope Boundaries
+- **In scope (MVP)**: Auth, league/team/swimmer/meet/event/time CRUD, public results page, age groups, gendered events, custom events
+- **Out of scope (future)**: Stripe billing, coach/viewer roles, relay events, split times, push notifications, native mobile
 - **Deferred design choice**: Role-based access within a league (currently all members are league admin) — add after MVP validates the core workflow
 
 ---
 
-## Further Considerations
+## Technical Notes
 
-1. **Tenant DB connection limits**: Each league uses a persistent `*sql.DB` pool. With many tenants, this could exhaust Postgres `max_connections`. Mitigation: use `pgbouncer` in the Docker Compose stack, or lazy-evict idle connections — recommend adding `pgbouncer` from the start.
+1. **Tenant DB connection limits**: Each league uses a persistent `*sql.DB` pool. With many tenants, this could exhaust Postgres `max_connections`. Mitigation: use `pgbouncer` in the Docker Compose stack, or lazy-evict idle connections.
 
-2. **Go router**: Chi vs. Gin. Gin is more widely used and has better middleware ecosystem. Chi is stdlib-aligned and simpler. Given the middleware-heavy design (auth + tenant per request), **Gin** is recommended.
-
-3. **Time storage format**: Store times as integer **milliseconds** in Postgres (`INTEGER`) for exact arithmetic and easy sorting/ranking. Display formatting (`1:23.45`) happens in the frontend.
+2. **Age group calculation**: Computed at query time from `swimmers.date_of_birth` relative to `meets.date`, not stored — avoids stale data as swimmers age.

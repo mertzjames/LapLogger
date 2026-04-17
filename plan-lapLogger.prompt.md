@@ -16,6 +16,8 @@ Each phase is executed by a designated agent. Use the agent picker or `@agent-na
 | `devsecops` | Dockerfiles, docker-compose, nginx, `.env` structure | Phases 0 & 7 |
 | `test` | Unit + integration tests (Go `_test.go`, React Testing Library) | After each impl phase |
 | `qa` | Static analysis, lint gates, acceptance review, definition-of-done sign-off | QA gates after each phase |
+| `security` | Security review — vulnerability assessment, threat modeling, security-focused tests | After each impl phase |
+| `docs` | Technical documentation — README, developer guides, API reference, architecture docs | After each impl phase + final pass |
 
 ---
 
@@ -118,6 +120,21 @@ League (tenant) ──► Teams ──► Swimmers
 - Review: league handler, provisioning flow
 - Confirm: all Phase 3 acceptance criteria met
 
+### SEC-1 — Security Review: Post-Phases 1–3 _(agent: `security`)_
+- Review OWASP Top 10 applicability: injection, broken access control, cryptographic failures, SSRF
+- Audit JWT implementation: signing algorithm, expiry, token storage, `none` algorithm rejection
+- Audit OAuth callback: state parameter, CSRF protection, redirect URI validation
+- Audit tenant isolation: cross-tenant data leakage, DB name injection, connection pool safety
+- Audit SQL queries: parameterized statements, input validation, error message leakage
+- Review existing tests for security coverage; add security-focused tests where gaps exist
+- Produce `docs/security/SEC-1-report.md`
+
+### DOC-1 — Documentation: Post-Phases 1–3 _(agent: `docs`)_
+- Update `README.md` with project overview, architecture summary, and quick-start instructions
+- Create `docs/architecture.md` — system architecture, data model, tenant isolation design
+- Create `docs/developer-guide.md` — local development setup, environment variables, running tests, project structure walkthrough
+- Create `docs/api-reference.md` — documented endpoints for auth and league management (Phases 1–3)
+
 ### Phase 4 — Tenant CRUD API _(agent: `backend-go`)_
 *All routes under `/api/leagues/:leagueId/`, require auth + tenant middleware*
 
@@ -134,6 +151,18 @@ League (tenant) ──► Teams ──► Swimmers
 - Review: all CRUD handlers, input validation, SQL injection safety
 - Confirm: all Phase 4 acceptance criteria met
 
+### SEC-2 — Security Review: Post-Phase 4 _(agent: `security`)_
+- Audit all CRUD handlers for authorization bypass (missing middleware, direct object reference)
+- Audit input validation: field length limits, type coercion, malformed UUID handling
+- Audit tenant boundary: verify no handler can access another league's data
+- Review for mass assignment vulnerabilities (binding extra fields from JSON)
+- Add security tests for: unauthorized CRUD attempts, cross-tenant access, malformed input
+- Produce `docs/security/SEC-2-report.md`
+
+### DOC-2 — Documentation: Post-Phase 4 _(agent: `docs`)_
+- Update `docs/api-reference.md` with full CRUD endpoints (teams, swimmers, meets, events, times)
+- Update `docs/developer-guide.md` with new handler patterns and testing instructions
+
 ### Phase 5 — Public Results _(agent: `backend-go`)_
 20. `handlers/results.go` — `GET /public/:leagueSlug/meets/:meetId` — returns structured results if `is_public=true`
 
@@ -143,6 +172,17 @@ League (tenant) ──► Teams ──► Swimmers
 - `go test ./... -coverprofile=coverage.out`
 - Review: public results handler, auth bypass safety, tenant isolation
 - Confirm: all Phase 5 acceptance criteria met
+
+### SEC-3 — Security Review: Post-Phase 5 _(agent: `security`)_
+- Audit public results endpoint: ensure only `is_public=true` meets are exposed
+- Audit auth bypass: verify no authenticated data leaks through public routes
+- Audit information disclosure: error messages, stack traces, internal IDs in public responses
+- Add security tests for: accessing private meets via public URL, slug enumeration
+- Produce `docs/security/SEC-3-report.md`
+
+### DOC-3 — Documentation: Post-Phase 5 _(agent: `docs`)_
+- Update `docs/api-reference.md` with public results endpoint
+- Add `docs/public-api.md` — guide for embedding or linking public results pages
 
 ### Phase 6 — Frontend _(agent: `frontend`)_
 21. Set up React Router v6 routes
@@ -162,12 +202,40 @@ League (tenant) ──► Teams ──► Swimmers
 - Review: component structure, API integration, auth flow
 - Confirm: all Phase 6 acceptance criteria met
 
+### SEC-4 — Security Review: Post-Phase 6 _(agent: `security`)_
+- Audit JWT storage on frontend: verify `sessionStorage` (not `localStorage`), no token in URLs after initial redirect
+- Audit XSS vectors: user-generated content rendering, `dangerouslySetInnerHTML` usage, input sanitization
+- Audit CORS configuration: allowed origins, credentials policy
+- Audit CSP headers: Content-Security-Policy meta tag or nginx header
+- Review React dependencies for known vulnerabilities (`npm audit`)
+- Add frontend security tests for: XSS in swimmer/team names, auth token handling
+- Produce `docs/security/SEC-4-report.md`
+
+### DOC-4 — Documentation: Post-Phase 6 _(agent: `docs`)_
+- Update `docs/developer-guide.md` with frontend setup, component structure, state management
+- Create `docs/user-guide.md` — end-user walkthrough of the application (with screenshots if applicable)
+- Update `README.md` with frontend development instructions
+
 ### Phase 7 — Docker & Dev Setup _(agent: `devsecops`)_
 30. Multi-stage `Dockerfile` for Go backend
 31. `Dockerfile` for frontend (build → nginx)
 32. `nginx.conf` (proxy + static file serving)
 33. Finalize `docker-compose.yml` with healthchecks
 34. Write `start.sh`
+
+### SEC-5 — Security Review: Post-Phase 7 _(agent: `security`)_
+- Audit Dockerfiles: non-root user, minimal base images, no secrets baked in
+- Audit nginx.conf: security headers (X-Frame-Options, X-Content-Type-Options, HSTS, CSP)
+- Audit docker-compose.yml: exposed ports, network isolation, volume permissions
+- Audit `.env` handling: no secrets in version control, `.env.example` uses placeholder values
+- Produce `docs/security/SEC-5-report.md` — final security posture summary
+
+### DOC-5 — Documentation: Final Pass _(agent: `docs`)_
+- Final `README.md` update: complete quick-start, deployment instructions, contributing guidelines
+- Create `docs/deployment.md` — production deployment guide (Docker Compose, environment variables, DNS, TLS)
+- Create `docs/troubleshooting.md` — common issues and solutions
+- Review all docs for accuracy, completeness, and consistency
+- Ensure `docs/` index or table of contents links all documents
 
 ---
 
@@ -216,6 +284,9 @@ Each QA gate follows a standard sequence. The `qa` agent runs these steps and pr
 10. `go test ./... -coverprofile=coverage.out` — all tests pass, ≥ 60% coverage on new code
 11. `npx eslint . && npx tsc --noEmit` — zero frontend lint/type errors
 12. QA gate reports archived for all phases (QA-0 through QA-6)
+13. Security review reports archived for all phases (SEC-1 through SEC-5)
+14. `docs/` contains: architecture, developer guide, API reference, deployment guide, troubleshooting
+15. `README.md` provides complete project overview and quick-start instructions
 
 ---
 
@@ -240,12 +311,18 @@ Each QA gate follows a standard sequence. The `qa` agent runs these steps and pr
 | D15 | Test coverage target | **≥ 60% on new code** | Pragmatic floor; raise after MVP |
 | D16 | QA gate policy | **Block on lint/vet failures** | Zero-warning policy for static analysis |
 | D17 | QA report format | **Markdown in PR/commit** | Lightweight, no external tooling needed |
+| D18 | Security review scope | **OWASP Top 10 + tenant isolation** | Covers most common web app vulnerabilities plus multi-tenancy risks |
+| D19 | Security report format | **Markdown in `docs/security/`** | Consistent with QA reports; versioned in repo |
+| D20 | Documentation framework | **Markdown in `docs/`** | No external tooling; renders on GitHub; easy for developers to contribute |
+| D21 | Documentation style | **Diataxis model** (tutorials, how-to, reference, explanation) | Proven structure for technical docs; covers all developer needs |
 
 ---
 
 ## Scope Boundaries
 - **In scope (MVP)**: Auth, league/team/swimmer/meet/event/time CRUD, public results page, age groups, gendered events, custom events
 - **In scope (QA)**: `golangci-lint`, `go vet`, `go test` with coverage, ESLint, `tsc --noEmit`, QA gate reports after each phase
+- **In scope (Security)**: OWASP Top 10 review, JWT/OAuth audit, tenant isolation audit, security-focused tests, `npm audit`, Docker security review
+- **In scope (Docs)**: README, architecture overview, developer guide, API reference, deployment guide, troubleshooting, onboarding for new developers
 - **Out of scope (future)**: Stripe billing, coach/viewer roles, relay events, split times, push notifications, native mobile
 - **Out of scope (QA)**: End-to-end browser tests (Playwright/Cypress), CI/CD pipeline, automated deploy gates
 - **Deferred design choice**: Role-based access within a league (currently all members are league admin) — add after MVP validates the core workflow

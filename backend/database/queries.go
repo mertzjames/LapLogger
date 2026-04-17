@@ -96,3 +96,46 @@ func (c *ControlDB) CheckMembership(userID, leagueID string) (bool, error) {
 	}
 	return exists, nil
 }
+
+// CreateLeague inserts a new league record and returns it.
+func (c *ControlDB) CreateLeague(name, slug, dbName string) (*models.League, error) {
+	id := uuid.New().String()
+	now := time.Now().UTC()
+
+	row := c.DB.QueryRow(`
+		INSERT INTO leagues (id, name, slug, db_name, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, name, slug, db_name, created_at
+	`, id, name, slug, dbName, now)
+
+	var l models.League
+	if err := row.Scan(&l.ID, &l.Name, &l.Slug, &l.DBName, &l.CreatedAt); err != nil {
+		return nil, fmt.Errorf("create league: %w", err)
+	}
+	return &l, nil
+}
+
+// AddMembership creates a league membership for a user with the given role.
+func (c *ControlDB) AddMembership(userID, leagueID, role string) error {
+	_, err := c.DB.Exec(`
+		INSERT INTO league_memberships (user_id, league_id, role, joined_at)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT DO NOTHING
+	`, userID, leagueID, role, time.Now().UTC())
+	if err != nil {
+		return fmt.Errorf("add membership: %w", err)
+	}
+	return nil
+}
+
+// UpdateLeagueDBName sets the db_name for a league after creation.
+func (c *ControlDB) UpdateLeagueDBName(leagueID, dbName string) error {
+	_, err := c.DB.Exec(
+		`UPDATE leagues SET db_name = $1 WHERE id = $2`,
+		dbName, leagueID,
+	)
+	if err != nil {
+		return fmt.Errorf("update league db_name: %w", err)
+	}
+	return nil
+}

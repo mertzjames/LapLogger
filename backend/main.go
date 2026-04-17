@@ -33,6 +33,7 @@ func main() {
 
 	// Handlers
 	authHandler := handlers.NewAuthHandler(cfg, controlDB)
+	leagueHandler := handlers.NewLeagueHandler(cfg, controlDB)
 
 	jwtSecret := []byte(cfg.JWTSecret)
 
@@ -55,6 +56,8 @@ func main() {
 	api.Use(middleware.AuthRequired(jwtSecret))
 	{
 		api.GET("/me", authHandler.GetMe)
+		api.POST("/leagues", leagueHandler.CreateLeague)
+		api.GET("/leagues", leagueHandler.ListLeagues)
 	}
 
 	// Tenant-scoped routes (auth + tenant middleware)

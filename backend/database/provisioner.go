@@ -50,7 +50,7 @@ func ProvisionTenantDB(controlDB *sql.DB, user, password, host, port, dbName str
 	if err != nil {
 		return fmt.Errorf("open tenant db: %w", err)
 	}
-	defer tenantDB.Close()
+	defer func() { _ = tenantDB.Close() }()
 
 	if err := runTenantMigrations(tenantDB); err != nil {
 		return fmt.Errorf("tenant migrate: %w", err)

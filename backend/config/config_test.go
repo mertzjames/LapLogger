@@ -7,7 +7,7 @@ import (
 
 func TestGetEnv_Fallback(t *testing.T) {
 	key := "LAPLOGGER_TEST_NONEXISTENT_KEY"
-	os.Unsetenv(key)
+	_ = os.Unsetenv(key)
 
 	got := getEnv(key, "default_val")
 	if got != "default_val" {
@@ -31,7 +31,7 @@ func TestLoad_Defaults(t *testing.T) {
 		"POSTGRES_PORT", "POSTGRES_DB", "JWT_SECRET", "BACKEND_PORT",
 	} {
 		t.Setenv(k, "")
-		os.Unsetenv(k)
+		_ = os.Unsetenv(k)
 	}
 
 	cfg := Load()

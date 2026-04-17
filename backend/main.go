@@ -22,7 +22,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize control DB: %v", err)
 	}
-	defer controlDB.DB.Close()
+	defer func() { _ = controlDB.DB.Close() }()
 
 	// Initialize tenant connection manager
 	tenantMgr := database.NewTenantManager(

@@ -56,7 +56,7 @@ func (c *ControlDB) GetUserLeagues(userID string) ([]models.League, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get user leagues: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var leagues []models.League
 	for rows.Next() {

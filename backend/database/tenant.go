@@ -61,7 +61,7 @@ func (tm *TenantManager) GetDB(dbName string) (*sql.DB, error) {
 	}
 
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("ping tenant db %s: %w", dbName, err)
 	}
 

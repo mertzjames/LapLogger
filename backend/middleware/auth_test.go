@@ -38,7 +38,7 @@ func TestAuthRequired_MissingHeader(t *testing.T) {
 	}
 
 	var body map[string]string
-	json.Unmarshal(w.Body.Bytes(), &body)
+	_ = json.Unmarshal(w.Body.Bytes(), &body)
 	if body["error"] != "missing authorization header" {
 		t.Errorf("error = %q; want %q", body["error"], "missing authorization header")
 	}
@@ -60,7 +60,7 @@ func TestAuthRequired_InvalidFormat_NoBearer(t *testing.T) {
 	}
 
 	var body map[string]string
-	json.Unmarshal(w.Body.Bytes(), &body)
+	_ = json.Unmarshal(w.Body.Bytes(), &body)
 	if body["error"] != "invalid authorization format" {
 		t.Errorf("error = %q; want %q", body["error"], "invalid authorization format")
 	}

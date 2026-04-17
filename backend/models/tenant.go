@@ -12,23 +12,23 @@ type Team struct {
 
 // Swimmer represents an individual swimmer on a team.
 type Swimmer struct {
-	ID          string    `json:"id" db:"id"`
-	TeamID      string    `json:"team_id" db:"team_id"`
-	FirstName   string    `json:"first_name" db:"first_name"`
-	LastName    string    `json:"last_name" db:"last_name"`
-	DateOfBirth string    `json:"date_of_birth" db:"date_of_birth"`
-	Gender      string    `json:"gender" db:"gender"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	ID          string     `json:"id" db:"id"`
+	TeamID      string     `json:"team_id" db:"team_id"`
+	FirstName   string     `json:"first_name" db:"first_name"`
+	LastName    string     `json:"last_name" db:"last_name"`
+	DateOfBirth *time.Time `json:"date_of_birth" db:"date_of_birth"`
+	Gender      string     `json:"gender" db:"gender"`
+	CreatedAt   time.Time  `json:"created_at" db:"created_at"`
 }
 
 // Meet represents a swim meet.
 type Meet struct {
-	ID        string    `json:"id" db:"id"`
-	Name      string    `json:"name" db:"name"`
-	Location  string    `json:"location" db:"location"`
-	MeetDate  string    `json:"meet_date" db:"meet_date"`
-	IsPublic  bool      `json:"is_public" db:"is_public"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	ID        string     `json:"id" db:"id"`
+	Name      string     `json:"name" db:"name"`
+	Location  string     `json:"location" db:"location"`
+	MeetDate  *time.Time `json:"meet_date" db:"meet_date"`
+	IsPublic  bool       `json:"is_public" db:"is_public"`
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
 }
 
 // Event represents a specific event at a meet (e.g., Boys 100 Free, 11-12).

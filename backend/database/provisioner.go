@@ -23,6 +23,9 @@ func ProvisionTenantDB(controlDB *sql.DB, user, password, host, port, dbName str
 	if !validDBName.MatchString(dbName) {
 		return fmt.Errorf("invalid database name: %s", dbName)
 	}
+	if len(dbName) > 63 {
+		return fmt.Errorf("database name too long (%d chars, max 63): %s", len(dbName), dbName)
+	}
 
 	// Check if database already exists
 	var exists bool

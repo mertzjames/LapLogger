@@ -168,13 +168,14 @@ func TestEvent_StandardEvent_OmitsCustomName(t *testing.T) {
 }
 
 func TestSwimmer_GenderValues(t *testing.T) {
+	dob := time.Date(2012, 3, 15, 0, 0, 0, 0, time.UTC)
 	for _, gender := range []string{"M", "F"} {
 		s := Swimmer{
 			ID:          "s-1",
 			TeamID:      "t-1",
 			FirstName:   "Test",
 			LastName:    "Swimmer",
-			DateOfBirth: "2012-03-15",
+			DateOfBirth: &dob,
 			Gender:      gender,
 		}
 

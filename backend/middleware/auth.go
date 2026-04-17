@@ -31,7 +31,7 @@ func AuthRequired(jwtSecret []byte) gin.HandlerFunc {
 				return nil, jwt.ErrSignatureInvalid
 			}
 			return jwtSecret, nil
-		})
+		}, jwt.WithExpirationRequired())
 		if err != nil || !token.Valid {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			return

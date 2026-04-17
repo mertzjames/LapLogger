@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/laplogger/laplogger/config"
 	"github.com/laplogger/laplogger/database"
 	"github.com/laplogger/laplogger/models"
@@ -32,6 +33,8 @@ type createLeagueRequest struct {
 
 // CreateLeague creates a new league, provisions the tenant database,
 // and adds the requesting user as the league admin.
+// The control DB operations (league record + membership) are atomic.
+// If tenant DB provisioning fails, the control DB records are rolled back.
 func (h *LeagueHandler) CreateLeague(c *gin.Context) {
 	userID, _ := c.Get("userID")
 
@@ -55,24 +58,17 @@ func (h *LeagueHandler) CreateLeague(c *gin.Context) {
 		return
 	}
 
-	// Create league record
-	league, err := h.controlDB.CreateLeague(name, slug, "")
+	// Generate the db_name up front so it can be inserted atomically
+	leagueUUID := uuid.New().String()
+	dbName := fmt.Sprintf("laplogger_league_%s", strings.ReplaceAll(leagueUUID, "-", "_"))
+
+	// Atomically create league record + membership in a single transaction
+	league, err := h.controlDB.CreateLeagueWithMembership(name, slug, dbName, userID.(string), "admin")
 	if err != nil {
 		log.Printf("Create league error: %v", err)
 		c.JSON(http.StatusConflict, gin.H{"error": "league name or slug already taken"})
 		return
 	}
-
-	// Set the db_name based on the league ID (use sanitized form)
-	dbName := fmt.Sprintf("laplogger_league_%s", strings.ReplaceAll(league.ID, "-", "_"))
-
-	// Update the league record with the db_name
-	if err := h.controlDB.UpdateLeagueDBName(league.ID, dbName); err != nil {
-		log.Printf("Update league db_name error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to configure league"})
-		return
-	}
-	league.DBName = dbName
 
 	// Provision the tenant database
 	if err := database.ProvisionTenantDB(
@@ -82,14 +78,11 @@ func (h *LeagueHandler) CreateLeague(c *gin.Context) {
 		dbName,
 	); err != nil {
 		log.Printf("Provision tenant DB error: %v", err)
+		// Rollback: remove the league + membership from the control DB
+		if delErr := h.controlDB.DeleteLeague(league.ID); delErr != nil {
+			log.Printf("Rollback delete league error: %v", delErr)
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to provision league database"})
-		return
-	}
-
-	// Add the creator as league admin
-	if err := h.controlDB.AddMembership(userID.(string), league.ID, "admin"); err != nil {
-		log.Printf("Add membership error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add membership"})
 		return
 	}
 

@@ -97,45 +97,65 @@ func (c *ControlDB) CheckMembership(userID, leagueID string) (bool, error) {
 	return exists, nil
 }
 
-// CreateLeague inserts a new league record and returns it.
-func (c *ControlDB) CreateLeague(name, slug, dbName string) (*models.League, error) {
+// CreateLeagueWithMembership atomically creates a league record with its db_name
+// and adds the creator as league admin within a single transaction.
+func (c *ControlDB) CreateLeagueWithMembership(name, slug, dbName, userID, role string) (*models.League, error) {
+	tx, err := c.DB.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	id := uuid.New().String()
 	now := time.Now().UTC()
 
-	row := c.DB.QueryRow(`
+	var l models.League
+	err = tx.QueryRow(`
 		INSERT INTO leagues (id, name, slug, db_name, created_at)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, name, slug, db_name, created_at
-	`, id, name, slug, dbName, now)
-
-	var l models.League
-	if err := row.Scan(&l.ID, &l.Name, &l.Slug, &l.DBName, &l.CreatedAt); err != nil {
+	`, id, name, slug, dbName, now).Scan(&l.ID, &l.Name, &l.Slug, &l.DBName, &l.CreatedAt)
+	if err != nil {
 		return nil, fmt.Errorf("create league: %w", err)
+	}
+
+	_, err = tx.Exec(`
+		INSERT INTO league_memberships (user_id, league_id, role, joined_at)
+		VALUES ($1, $2, $3, $4)
+	`, userID, l.ID, role, now)
+	if err != nil {
+		return nil, fmt.Errorf("add membership: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit tx: %w", err)
 	}
 	return &l, nil
 }
 
+// DeleteLeague removes a league record and its memberships (used for rollback).
+func (c *ControlDB) DeleteLeague(leagueID string) error {
+	_, err := c.DB.Exec(`DELETE FROM leagues WHERE id = $1`, leagueID)
+	if err != nil {
+		return fmt.Errorf("delete league: %w", err)
+	}
+	return nil
+}
+
 // AddMembership creates a league membership for a user with the given role.
-func (c *ControlDB) AddMembership(userID, leagueID, role string) error {
-	_, err := c.DB.Exec(`
+// Returns true if a new membership was created, false if it already existed.
+func (c *ControlDB) AddMembership(userID, leagueID, role string) (bool, error) {
+	result, err := c.DB.Exec(`
 		INSERT INTO league_memberships (user_id, league_id, role, joined_at)
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT DO NOTHING
 	`, userID, leagueID, role, time.Now().UTC())
 	if err != nil {
-		return fmt.Errorf("add membership: %w", err)
+		return false, fmt.Errorf("add membership: %w", err)
 	}
-	return nil
-}
-
-// UpdateLeagueDBName sets the db_name for a league after creation.
-func (c *ControlDB) UpdateLeagueDBName(leagueID, dbName string) error {
-	_, err := c.DB.Exec(
-		`UPDATE leagues SET db_name = $1 WHERE id = $2`,
-		dbName, leagueID,
-	)
+	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("update league db_name: %w", err)
+		return false, fmt.Errorf("rows affected: %w", err)
 	}
-	return nil
+	return rowsAffected > 0, nil
 }

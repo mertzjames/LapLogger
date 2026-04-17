@@ -141,7 +141,7 @@ func TestSecurity_JWT_FutureIssuedAt(t *testing.T) {
 }
 
 // TestSecurity_JWT_MissingExpClaim verifies tokens without an exp claim
-// are handled. jwt-go v5 does NOT reject missing exp by default.
+// are rejected. The middleware uses jwt.WithExpirationRequired() to enforce this.
 func TestSecurity_JWT_MissingExpClaim(t *testing.T) {
 	token := createTestToken(testJWTSecret, jwt.MapClaims{
 		"sub": "user-123",
@@ -157,8 +157,9 @@ func TestSecurity_JWT_MissingExpClaim(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	// Document actual behavior: does the middleware accept tokens without exp?
-	t.Logf("Token without exp claim: status=%d (200=accepted, 401=rejected)", w.Code)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d; want %d (tokens without exp must be rejected)", w.Code, http.StatusUnauthorized)
+	}
 }
 
 // TestSecurity_JWT_ExtraWhitespaceInHeader verifies the auth header parser

@@ -50,7 +50,7 @@ func TestSecurity_Slug_SQLInjection(t *testing.T) {
 			slug = strings.Trim(slug, "-")
 			// Slug should only contain [a-z0-9-]
 			for _, c := range slug {
-				if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
+				if (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '-' {
 					t.Errorf("slug %q contains invalid char %q from input %q", slug, string(c), input)
 				}
 			}
@@ -102,7 +102,7 @@ func TestSecurity_DBName_Generation(t *testing.T) {
 		}
 		// Must not contain SQL injection chars
 		for _, c := range dbName {
-			if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_') {
+			if (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '_' {
 				t.Errorf("DB name %q contains invalid char %q", dbName, string(c))
 			}
 		}
@@ -112,7 +112,7 @@ func TestSecurity_DBName_Generation(t *testing.T) {
 // isValidDBName mirrors the regex from provisioner.go for test verification.
 func isValidDBName(name string) bool {
 	for _, c := range name {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '_' {
 			return false
 		}
 	}

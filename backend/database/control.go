@@ -1,8 +1,8 @@
 package database
 
 import (
-	"embed"
 	"database/sql"
+	"embed"
 	"fmt"
 	"log"
 

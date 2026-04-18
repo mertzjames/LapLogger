@@ -15,14 +15,14 @@ A multi-tenant SaaS swim time tracker built with Go, React/TypeScript, and Postg
 ## Architecture Overview
 
 ```
-┌─────────┐     ┌──────────┐     ┌──────────────────────┐
-│  nginx   │────▶│  backend  │────▶│  PostgreSQL           │
-│  :80     │     │  (Go/Gin) │     │                       │
-└─────────┘     │  :8080    │     │  laplogger_control     │
-┌─────────┐     │           │     │  laplogger_league_<id> │
-│ frontend │◀───│           │     │  laplogger_league_<id> │
-│  (React) │    └──────────┘     └──────────────────────┘
-└─────────┘
+┌──────────┐     ┌──────────┐     ┌────────────────────────┐
+│  nginx   │────▶│  backend │────▶│  PostgreSQL            │
+│  :80     │     │  (Go/Gin)│     │                        │
+└──────────┘     │  :8080   │     │  laplogger_control     │
+┌───────────┐    │          │     │  laplogger_league_<id> │
+│ frontend  │◀───│          │     │  laplogger_league_<id> │
+│  (React)  │    └──────────┘     └────────────────────────┘
+└───────────┘
 ```
 
 - **Control plane DB** (`laplogger_control`): stores users, leagues, and memberships

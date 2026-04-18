@@ -90,7 +90,7 @@ League (tenant) ──► Teams ──► Swimmers
 ### Phase 3 — League (Tenant) Management _(agent: `backend-go`)_ ✅
 14. `handlers/league.go` — `POST /api/leagues` (creates league + provisions DB), `GET /api/leagues` (user's leagues)
 
-### QA-0 — QA Tooling Setup _(agent: `qa`)_
+### QA-0 — QA Tooling Setup _(agent: `qa`)_ ✅
 *Run once before Phase 4 begins.*
 
 - Install & configure `golangci-lint` (`.golangci.yml` in repo root)
@@ -99,28 +99,28 @@ League (tenant) ──► Teams ──► Swimmers
 - Add `tsc --noEmit` check script to `frontend/package.json`
 - Verify all tools run cleanly against current codebase
 
-### QA-1 — QA Gate: Post-Phase 1 _(agent: `qa`)_
+### QA-1 — QA Gate: Post-Phase 1 _(agent: `qa`)_ ✅
 - `go vet ./...`
 - `golangci-lint run ./...`
 - `go test ./... -coverprofile=coverage.out`
 - Review: migration SQL files, model structs, DB connection code
 - Confirm: all Phase 1 acceptance criteria met
 
-### QA-2 — QA Gate: Post-Phase 2 _(agent: `qa`)_
+### QA-2 — QA Gate: Post-Phase 2 _(agent: `qa`)_ ✅
 - `go vet ./...`
 - `golangci-lint run ./...`
 - `go test ./... -coverprofile=coverage.out`
 - Review: auth handler, JWT middleware, tenant middleware
 - Confirm: all Phase 2 acceptance criteria met
 
-### QA-3 — QA Gate: Post-Phase 3 _(agent: `qa`)_
+### QA-3 — QA Gate: Post-Phase 3 _(agent: `qa`)_ ✅
 - `go vet ./...`
 - `golangci-lint run ./...`
 - `go test ./... -coverprofile=coverage.out`
 - Review: league handler, provisioning flow
 - Confirm: all Phase 3 acceptance criteria met
 
-### SEC-1 — Security Review: Post-Phases 1–3 _(agent: `security`)_
+### SEC-1 — Security Review: Post-Phases 1–3 _(agent: `security`)_ ✅
 - Review OWASP Top 10 applicability: injection, broken access control, cryptographic failures, SSRF
 - Audit JWT implementation: signing algorithm, expiry, token storage, `none` algorithm rejection
 - Audit OAuth callback: state parameter, CSRF protection, redirect URI validation
@@ -129,42 +129,45 @@ League (tenant) ──► Teams ──► Swimmers
 - Review existing tests for security coverage; add security-focused tests where gaps exist
 - Produce `docs/security/SEC-1-report.md`
 
-### DOC-1 — Documentation: Post-Phases 1–3 _(agent: `docs`)_
+### DOC-1 — Documentation: Post-Phases 1–3 _(agent: `docs`)_ ✅
 - Update `README.md` with project overview, architecture summary, and quick-start instructions
 - Create `docs/architecture.md` — system architecture, data model, tenant isolation design
 - Create `docs/developer-guide.md` — local development setup, environment variables, running tests, project structure walkthrough
 - Create `docs/api-reference.md` — documented endpoints for auth and league management (Phases 1–3)
 
-### Phase 4 — Tenant CRUD API _(agent: `backend-go`)_
+### Phase 4 — Tenant CRUD API _(agent: `backend-go`)_ ✅
 *All routes under `/api/leagues/:leagueId/`, require auth + tenant middleware*
 
-15. `handlers/team.go` — full CRUD for teams
-16. `handlers/swimmer.go` — full CRUD, filterable by team
-17. `handlers/meet.go` — full CRUD with `is_public` flag
-18. `handlers/event.go` — full CRUD under `/meets/:meetId/events`
-19. `handlers/time.go` — full CRUD under `/meets/:meetId/events/:eventId/times`
+15. `handlers/team.go` — full CRUD for teams ✅
+16. `handlers/swimmer.go` — full CRUD, filterable by team ✅
+17. `handlers/meet.go` — full CRUD with `is_public` flag ✅
+18. `handlers/event.go` — full CRUD under `/meets/:meetId/events` ✅
+19. `handlers/time_entry.go` — full CRUD under `/meets/:meetId/events/:eventId/times` ✅
+20. `handlers/validation.go` — shared validation helpers (UUID, date, length) ✅
 
-### QA-4 — QA Gate: Post-Phase 4 _(agent: `qa`)_
-- `go vet ./...`
-- `golangci-lint run ./...`
-- `go test ./... -coverprofile=coverage.out`
-- Review: all CRUD handlers, input validation, SQL injection safety
-- Confirm: all Phase 4 acceptance criteria met
+### QA-4 — QA Gate: Post-Phase 4 _(agent: `qa`)_ ✅
+- `go vet ./...` — 0 warnings ✅
+- `golangci-lint run ./...` — 0 issues ✅
+- `go test ./... -count=1` — all pass (87 handler tests) ✅
+- Review: all CRUD handlers, input validation, SQL injection safety ✅
+- Confirm: all Phase 4 acceptance criteria met ✅
+- Report: `docs/qa/QA-4-post-phase4.md` ✅
 
-### SEC-2 — Security Review: Post-Phase 4 _(agent: `security`)_
-- Audit all CRUD handlers for authorization bypass (missing middleware, direct object reference)
-- Audit input validation: field length limits, type coercion, malformed UUID handling
-- Audit tenant boundary: verify no handler can access another league's data
-- Review for mass assignment vulnerabilities (binding extra fields from JSON)
-- Add security tests for: unauthorized CRUD attempts, cross-tenant access, malformed input
-- Produce `docs/security/SEC-2-report.md`
+### SEC-2 — Security Review: Post-Phase 4 _(agent: `security`)_ ✅
+- Audit all CRUD handlers for authorization bypass (missing middleware, direct object reference) ✅
+- Audit input validation: field length limits, type coercion, malformed UUID handling ✅
+- Audit tenant boundary: verify no handler can access another league's data ✅
+- Review for mass assignment vulnerabilities (binding extra fields from JSON) ✅
+- Add security tests for: unauthorized CRUD attempts, cross-tenant access, malformed input ✅
+- Produce `docs/security/SEC-2-report.md` ✅
+- Findings: 0 CRITICAL, 0 HIGH, 1 MEDIUM (deferred race conditions), 2 LOW
 
-### DOC-2 — Documentation: Post-Phase 4 _(agent: `docs`)_
-- Update `docs/api-reference.md` with full CRUD endpoints (teams, swimmers, meets, events, times)
-- Update `docs/developer-guide.md` with new handler patterns and testing instructions
+### DOC-2 — Documentation: Post-Phase 4 _(agent: `docs`)_ ✅
+- Update `docs/api-reference.md` with full CRUD endpoints (teams, swimmers, meets, events, times) ✅
+- Update `docs/developer-guide.md` with new handler patterns and testing instructions ✅
 
 ### Phase 5 — Public Results _(agent: `backend-go`)_
-20. `handlers/results.go` — `GET /public/:leagueSlug/meets/:meetId` — returns structured results if `is_public=true`
+21. `handlers/results.go` — `GET /public/:leagueSlug/meets/:meetId` — returns structured results if `is_public=true`
 
 ### QA-5 — QA Gate: Post-Phase 5 _(agent: `qa`)_
 - `go vet ./...`
@@ -308,6 +311,30 @@ Each QA gate follows a standard sequence. The `qa` agent runs these steps and pr
 | D12 | Go linter | **golangci-lint** | Industry standard, configurable, fast |
 | D13 | Frontend linter | **ESLint** + Prettier | Standard React/TS toolchain |
 | D14 | Type checking | **tsc --noEmit** | Catches type errors without emitting JS |
+| D15 | Git commits | **Per-agent git commit after each sub-phase** | Each agent commits their changes with a descriptive message after completing work |
+
+---
+
+## Git Commit Workflow
+
+After each agent completes their work within a phase (implementation, tests, security, docs, QA), they must:
+
+1. `git add` the files they added, changed, or removed
+2. `git commit` with a descriptive message following this format:
+
+```
+<phase>(<scope>): <description>
+
+Files: <list of key files>
+```
+
+Examples:
+- `phase5(backend): add public results handler`
+- `qa4(qa): add QA-4 post-phase4 gate report`
+- `sec2(security): add SEC-2 security review report`
+- `doc2(docs): update API reference with CRUD endpoints`
+
+This ensures traceability and clean history per agent contribution.
 | D15 | Test coverage target | **≥ 60% on new code** | Pragmatic floor; raise after MVP |
 | D16 | QA gate policy | **Block on lint/vet failures** | Zero-warning policy for static analysis |
 | D17 | QA report format | **Markdown in PR/commit** | Lightweight, no external tooling needed |

@@ -84,6 +84,21 @@ func (c *ControlDB) GetLeagueByID(leagueID string) (*models.League, error) {
 	return &l, nil
 }
 
+// GetLeagueBySlug retrieves a single league by its URL slug.
+func (c *ControlDB) GetLeagueBySlug(slug string) (*models.League, error) {
+	var l models.League
+	err := c.DB.QueryRow(
+		`SELECT id, name, slug, db_name, created_at FROM leagues WHERE slug = $1`, slug,
+	).Scan(&l.ID, &l.Name, &l.Slug, &l.DBName, &l.CreatedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get league by slug: %w", err)
+	}
+	return &l, nil
+}
+
 // CheckMembership returns true if the user is a member of the given league.
 func (c *ControlDB) CheckMembership(userID, leagueID string) (bool, error) {
 	var exists bool

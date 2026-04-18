@@ -39,6 +39,7 @@ func main() {
 	meetHandler := handlers.NewMeetHandler()
 	eventHandler := handlers.NewEventHandler()
 	timeHandler := handlers.NewTimeHandler()
+	resultsHandler := handlers.NewResultsHandler(controlDB, tenantMgr)
 
 	jwtSecret := []byte(cfg.JWTSecret)
 
@@ -48,6 +49,7 @@ func main() {
 	r.GET("/api/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+	r.GET("/api/public/:leagueSlug/meets/:meetId", resultsHandler.GetPublicResults)
 
 	// Auth routes (no JWT required)
 	auth := r.Group("/api/auth")

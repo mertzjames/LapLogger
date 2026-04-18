@@ -224,12 +224,12 @@ League (tenant) ──► Teams ──► Swimmers
 - Create `docs/user-guide.md` — end-user walkthrough of the application ✅
 - Update `README.md` with frontend development instructions ✅
 
-### Phase 7 — Docker & Dev Setup _(agent: `devsecops`)_
-30. Multi-stage `Dockerfile` for Go backend
-31. `Dockerfile` for frontend (build → nginx)
-32. `nginx.conf` (proxy + static file serving)
-33. Finalize `docker-compose.yml` with healthchecks
-34. Write `start.sh`
+### Phase 7 — Docker & Dev Setup _(agent: `devsecops`)_ ✅
+30. Multi-stage `Dockerfile` for Go backend ✅
+31. `Dockerfile` for frontend (build → nginx) ✅
+32. `nginx.conf` (proxy + static file serving) ✅
+33. Finalize `docker-compose.yml` with healthchecks ✅
+34. Write `start.sh` ✅
 
 ### SEC-5 — Security Review: Post-Phase 7 _(agent: `security`)_
 - Audit Dockerfiles: non-root user, minimal base images, no secrets baked in

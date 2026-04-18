@@ -256,4 +256,201 @@ Routes under `/api/leagues/:leagueId/` are protected by both `AuthRequired` and 
 | 500 | `{"error": "failed to resolve league"}` | Database error loading league record |
 | 500 | `{"error": "failed to connect to league database"}` | Could not open connection to tenant DB |
 
-CRUD endpoints for teams, swimmers, meets, events, and times will be added in Phase 4.
+CRUD endpoints for teams, swimmers, meets, events, and times are documented below.
+
+---
+
+## Teams
+
+All team endpoints are under `/api/leagues/:leagueId/teams`. Require authentication + league membership.
+
+### `GET /api/leagues/:leagueId/teams`
+
+Returns all teams in the league, ordered by name.
+
+**Response** `200 OK` — Array of team objects.
+
+### `GET /api/leagues/:leagueId/teams/:teamId`
+
+Returns a single team.
+
+**Response** `200 OK` — Team object. `404` if not found. `400` if invalid UUID.
+
+### `POST /api/leagues/:leagueId/teams`
+
+Creates a new team.
+
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `name` | string | Yes | Non-empty, max 255 chars |
+| `short_name` | string | No | Optional abbreviation |
+
+**Response** `201 Created` — Created team object.
+
+### `PUT /api/leagues/:leagueId/teams/:teamId`
+
+Updates a team. Only provided fields are updated.
+
+| Field | Type | Required |
+|---|---|---|
+| `name` | string | No |
+| `short_name` | string | No |
+
+**Response** `200 OK` — Updated team object. `404` if not found.
+
+### `DELETE /api/leagues/:leagueId/teams/:teamId`
+
+Deletes a team. **Response** `204 No Content`. `404` if not found.
+
+---
+
+## Swimmers
+
+All swimmer endpoints are under `/api/leagues/:leagueId/swimmers`.
+
+### `GET /api/leagues/:leagueId/swimmers`
+
+Returns all swimmers. Optionally filter by `?team_id=<uuid>`.
+
+**Response** `200 OK` — Array of swimmer objects ordered by last_name, first_name.
+
+### `GET /api/leagues/:leagueId/swimmers/:swimmerId`
+
+Returns a single swimmer. `404` if not found. `400` if invalid UUID.
+
+### `POST /api/leagues/:leagueId/swimmers`
+
+Creates a new swimmer.
+
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `team_id` | string (UUID) | Yes | Must reference existing team |
+| `first_name` | string | Yes | Non-empty, max 255 chars |
+| `last_name` | string | Yes | Non-empty, max 255 chars |
+| `date_of_birth` | string | Yes | Format: `YYYY-MM-DD` |
+| `gender` | string | Yes | `M` or `F` (case-insensitive) |
+
+**Response** `201 Created` — Created swimmer object.
+
+### `PUT /api/leagues/:leagueId/swimmers/:swimmerId`
+
+Updates a swimmer. Only provided fields are updated. Same constraints as create.
+
+**Response** `200 OK` — Updated swimmer object.
+
+### `DELETE /api/leagues/:leagueId/swimmers/:swimmerId`
+
+Deletes a swimmer. **Response** `204 No Content`.
+
+---
+
+## Meets
+
+All meet endpoints are under `/api/leagues/:leagueId/meets`.
+
+### `GET /api/leagues/:leagueId/meets`
+
+Returns all meets, ordered by meet_date descending.
+
+### `GET /api/leagues/:leagueId/meets/:meetId`
+
+Returns a single meet. `404` if not found.
+
+### `POST /api/leagues/:leagueId/meets`
+
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `name` | string | Yes | Non-empty, max 255 chars |
+| `location` | string | No | Max 500 chars |
+| `meet_date` | string | Yes | Format: `YYYY-MM-DD` |
+| `is_public` | boolean | No | Defaults to `false` |
+
+**Response** `201 Created`
+
+### `PUT /api/leagues/:leagueId/meets/:meetId`
+
+Updates a meet. Only provided fields are updated.
+
+### `DELETE /api/leagues/:leagueId/meets/:meetId`
+
+Deletes a meet. Cascades to events and times via FK constraints.
+
+---
+
+## Events
+
+Events are scoped to meets: `/api/leagues/:leagueId/meets/:meetId/events`.
+
+### `GET .../events`
+
+Returns all events for a meet, ordered by sort_order.
+
+### `GET .../events/:eventId`
+
+Returns a single event. `404` if not found or doesn't belong to meet.
+
+### `POST .../events`
+
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `stroke` | string | Yes | `Free`, `Back`, `Breast`, `Fly`, `IM` (unless `is_custom`) |
+| `distance` | int | Yes | Must be positive |
+| `unit` | string | No | `yards` (default) or `meters` |
+| `gender` | string | No | `M`, `F`, or `X` (default) |
+| `age_group` | string | No | Defaults to `Open` |
+| `is_custom` | boolean | No | Bypasses stroke validation |
+| `custom_name` | string | No | Name for custom events |
+| `sort_order` | int | No | Display order |
+
+**Response** `201 Created`
+
+### `PUT .../events/:eventId`
+
+Updates an event. Only provided fields are updated.
+
+### `DELETE .../events/:eventId`
+
+Deletes an event. Cascades to times.
+
+---
+
+## Times (Time Entries)
+
+Times are scoped to events: `/api/leagues/:leagueId/meets/:meetId/events/:eventId/times`.
+
+### `GET .../times`
+
+Returns all times for an event, ordered by time_hundredths ascending (fastest first).
+
+### `GET .../times/:timeId`
+
+Returns a single time entry.
+
+### `POST .../times`
+
+| Field | Type | Required | Constraints |
+|---|---|---|---|
+| `swimmer_id` | string (UUID) | Yes | Must reference existing swimmer |
+| `time_hundredths` | int | Yes | Must be positive (e.g., 6523 = 1:05.23) |
+| `is_exhibition` | boolean | No | Defaults to `false` |
+
+**Response** `201 Created`. Returns `409 Conflict` if swimmer already has a time in this event.
+
+### `PUT .../times/:timeId`
+
+Updates a time entry. Only provided fields are updated.
+
+### `DELETE .../times/:timeId`
+
+Deletes a time entry. **Response** `204 No Content`.
+
+---
+
+## Common Validation Errors
+
+All CRUD endpoints return `400 Bad Request` for:
+- Invalid UUID in path parameters
+- Missing required fields
+- Invalid enum values (gender, stroke, unit)
+- Invalid date format (must be `YYYY-MM-DD`)
+- String fields exceeding length limits (names: 255, location: 500)

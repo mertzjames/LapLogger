@@ -107,7 +107,13 @@ LapLogger/
 │   │
 │   ├── handlers/
 │   │   ├── auth.go           # Google OAuth login + JWT issuance + /me endpoint
-│   │   └── league.go         # Create and list leagues (tenant management)
+│   │   ├── league.go         # Create and list leagues (tenant management)
+│   │   ├── team.go           # Team CRUD within tenant DB
+│   │   ├── swimmer.go        # Swimmer CRUD within tenant DB
+│   │   ├── meet.go           # Meet CRUD within tenant DB
+│   │   ├── event.go          # Event CRUD (scoped to meets)
+│   │   ├── time_entry.go     # Time entry CRUD (scoped to events)
+│   │   └── validation.go     # Shared validation helpers (UUID, date, length)
 │   │
 │   ├── middleware/
 │   │   ├── auth.go           # JWT validation middleware

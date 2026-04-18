@@ -231,19 +231,20 @@ League (tenant) ──► Teams ──► Swimmers
 33. Finalize `docker-compose.yml` with healthchecks ✅
 34. Write `start.sh` ✅
 
-### SEC-5 — Security Review: Post-Phase 7 _(agent: `security`)_
-- Audit Dockerfiles: non-root user, minimal base images, no secrets baked in
-- Audit nginx.conf: security headers (X-Frame-Options, X-Content-Type-Options, HSTS, CSP)
-- Audit docker-compose.yml: exposed ports, network isolation, volume permissions
-- Audit `.env` handling: no secrets in version control, `.env.example` uses placeholder values
-- Produce `docs/security/SEC-5-report.md` — final security posture summary
+### SEC-5 — Security Review: Post-Phase 7 _(agent: `security`)_ ✅
+- Audit Dockerfiles: non-root user, minimal base images, no secrets baked in ✅
+- Audit nginx.conf: security headers (X-Frame-Options, X-Content-Type-Options, HSTS, CSP) ✅
+- Audit docker-compose.yml: exposed ports, network isolation, volume permissions ✅
+- Audit `.env` handling: no secrets in version control, `.env.example` uses placeholder values ✅
+- Produce `docs/security/SEC-5-report.md` — final security posture summary ✅
+- Findings: 0 CRITICAL, 1 HIGH (TLS/HSTS pending), 2 MEDIUM, 2 LOW
 
-### DOC-5 — Documentation: Final Pass _(agent: `docs`)_
-- Final `README.md` update: complete quick-start, deployment instructions, contributing guidelines
-- Create `docs/deployment.md` — production deployment guide (Docker Compose, environment variables, DNS, TLS)
-- Create `docs/troubleshooting.md` — common issues and solutions
-- Review all docs for accuracy, completeness, and consistency
-- Ensure `docs/` index or table of contents links all documents
+### DOC-5 — Documentation: Final Pass _(agent: `docs`)_ ✅
+- Final `README.md` update: complete quick-start, deployment instructions, contributing guidelines ✅
+- Create `docs/deployment.md` — production deployment guide (Docker Compose, environment variables, DNS, TLS) ✅
+- Create `docs/troubleshooting.md` — common issues and solutions ✅
+- Review all docs for accuracy, completeness, and consistency ✅
+- Ensure `docs/` index or table of contents links all documents ✅
 
 ---
 

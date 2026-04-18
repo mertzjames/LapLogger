@@ -37,8 +37,16 @@ Edit `.env` with your local values:
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID | (set up in Google Cloud Console) |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | (set up in Google Cloud Console) |
 | `GOOGLE_REDIRECT_URI` | OAuth callback URL | `http://localhost/api/auth/google/callback` |
+| `FRONTEND_URL` | Frontend URL used after OAuth callback | `http://localhost` |
 | `JWT_SECRET` | HMAC secret for signing JWTs | `dev-secret-change-in-production` |
 | `BACKEND_PORT` | Port the Go server listens on | `8080` |
+
+For direct local development without nginx, change these values in `.env` before starting the app:
+
+```bash
+GOOGLE_REDIRECT_URI=http://localhost:8080/api/auth/google/callback
+FRONTEND_URL=http://localhost:5173
+```
 
 ### 3. Set Up the Database
 
@@ -71,10 +79,12 @@ The Vite dev server starts at `http://localhost:5173`.
 ### Docker Compose (Alternative)
 
 ```bash
-docker compose up --build
+./start.sh
 ```
 
 This starts all services (postgres, backend, frontend, nginx) with the app available at `http://localhost`.
+
+Compose exposes only nginx on the host. Backend, frontend, and postgres communicate over internal Docker networks.
 
 ## Project Structure
 
@@ -280,6 +290,8 @@ Run as part of every QA gate.
 5. Add authorized redirect URI: `http://localhost/api/auth/google/callback`
 6. Copy the Client ID and Client Secret into your `.env` file
 
+For direct local development without Docker, use `http://localhost:8080/api/auth/google/callback` instead and set `FRONTEND_URL=http://localhost:5173`.
+
 ---
 
 ## Frontend Development
@@ -309,6 +321,32 @@ npm run build
 ```
 
 Output goes to `frontend/dist/`. The build is served by nginx in production.
+
+## Docker Images & Runtime
+
+### Backend Container
+
+- Built via multi-stage Dockerfile in `backend/Dockerfile`
+- Final runtime image is Alpine-based and runs as non-root user `app`
+- Health check target: `GET /api/health` on internal port `8080`
+
+### Frontend Container
+
+- Built via multi-stage Dockerfile in `frontend/Dockerfile`
+- Static assets are served by `nginxinc/nginx-unprivileged`
+- Internal listen port is `8080`; external traffic reaches it only through root nginx
+
+### Root nginx Proxy
+
+- Lives at `nginx/nginx.conf`
+- Proxies `/api/` to backend and `/` to frontend
+- Adds CSP, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`
+
+### Compose Networks
+
+- `app-tier` connects nginx, backend, and frontend
+- `database-tier` connects backend and postgres
+- Postgres and backend are not published to the host in the containerized setup
 
 ### Linting & Type Checking
 

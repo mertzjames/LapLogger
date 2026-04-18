@@ -48,6 +48,9 @@ git clone <repo-url> && cd LapLogger
 # 2. Copy environment config
 cp .env.example .env
 # Edit .env with your PostgreSQL credentials and Google OAuth keys
+# For direct backend + Vite development also set:
+# GOOGLE_REDIRECT_URI=http://localhost:8080/api/auth/google/callback
+# FRONTEND_URL=http://localhost:5173
 
 # 3. Create the control database
 createdb laplogger_control
@@ -65,10 +68,17 @@ npm install && npm run dev
 
 ```bash
 cp .env.example .env   # configure credentials
-docker compose up --build
+./start.sh
 ```
 
 The app will be available at `http://localhost`.
+
+### Compose Topology
+
+- `nginx` is the only host-exposed entrypoint on `http://localhost`
+- `backend` and `postgres` stay internal to the Docker networks
+- OAuth callback for the Docker stack uses `http://localhost/api/auth/google/callback`
+- Backend redirects back to `FRONTEND_URL=http://localhost`
 
 ### Environment Variables
 
@@ -82,6 +92,7 @@ The app will be available at `http://localhost`.
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID | — |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | — |
 | `GOOGLE_REDIRECT_URI` | OAuth redirect URI | — |
+| `FRONTEND_URL` | Frontend URL used after OAuth callback | `http://localhost` |
 | `JWT_SECRET` | Secret for signing JWTs | `dev-secret-change-in-production` |
 | `BACKEND_PORT` | Backend listen port | `8080` |
 
@@ -96,8 +107,17 @@ See [docs/developer-guide.md](docs/developer-guide.md) for detailed setup instru
 | [API Reference](docs/api-reference.md) | All REST endpoints (auth, leagues, CRUD, public results) |
 | [User Guide](docs/user-guide.md) | End-user walkthrough of the application |
 | [Public API](docs/public-api.md) | Guide for embedding or linking public results |
+| [Deployment Guide](docs/deployment.md) | Docker Compose deployment, env vars, DNS, TLS |
+| [Troubleshooting](docs/troubleshooting.md) | Common setup and runtime issues |
 | [QA Reports](docs/qa/) | QA gate reports for each phase |
 | [Security Reports](docs/security/) | Security review reports |
+
+## Contributing
+
+1. Run backend tests with `cd backend && go test ./... -count=1`.
+2. Run frontend checks with `cd frontend && npx eslint . --max-warnings 0 && npx tsc -b`.
+3. For containerized verification, run `./start.sh` and confirm `http://localhost/api/health` returns `{"status":"ok"}`.
+4. Keep `.env` out of version control and use `.env.example` as the template for new variables.
 
 ## Tech Stack
 

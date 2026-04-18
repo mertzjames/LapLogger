@@ -34,6 +34,11 @@ func main() {
 	// Handlers
 	authHandler := handlers.NewAuthHandler(cfg, controlDB)
 	leagueHandler := handlers.NewLeagueHandler(cfg, controlDB)
+	teamHandler := handlers.NewTeamHandler()
+	swimmerHandler := handlers.NewSwimmerHandler()
+	meetHandler := handlers.NewMeetHandler()
+	eventHandler := handlers.NewEventHandler()
+	timeHandler := handlers.NewTimeHandler()
 
 	jwtSecret := []byte(cfg.JWTSecret)
 
@@ -65,7 +70,40 @@ func main() {
 	leagues.Use(middleware.AuthRequired(jwtSecret))
 	leagues.Use(middleware.TenantRequired(controlDB, tenantMgr))
 	{
-		// Tenant CRUD endpoints will be added in Phase 4
+		// Teams
+		leagues.GET("/teams", teamHandler.ListTeams)
+		leagues.POST("/teams", teamHandler.CreateTeam)
+		leagues.GET("/teams/:teamId", teamHandler.GetTeam)
+		leagues.PUT("/teams/:teamId", teamHandler.UpdateTeam)
+		leagues.DELETE("/teams/:teamId", teamHandler.DeleteTeam)
+
+		// Swimmers
+		leagues.GET("/swimmers", swimmerHandler.ListSwimmers)
+		leagues.POST("/swimmers", swimmerHandler.CreateSwimmer)
+		leagues.GET("/swimmers/:swimmerId", swimmerHandler.GetSwimmer)
+		leagues.PUT("/swimmers/:swimmerId", swimmerHandler.UpdateSwimmer)
+		leagues.DELETE("/swimmers/:swimmerId", swimmerHandler.DeleteSwimmer)
+
+		// Meets
+		leagues.GET("/meets", meetHandler.ListMeets)
+		leagues.POST("/meets", meetHandler.CreateMeet)
+		leagues.GET("/meets/:meetId", meetHandler.GetMeet)
+		leagues.PUT("/meets/:meetId", meetHandler.UpdateMeet)
+		leagues.DELETE("/meets/:meetId", meetHandler.DeleteMeet)
+
+		// Events (nested under meets)
+		leagues.GET("/meets/:meetId/events", eventHandler.ListEvents)
+		leagues.POST("/meets/:meetId/events", eventHandler.CreateEvent)
+		leagues.GET("/meets/:meetId/events/:eventId", eventHandler.GetEvent)
+		leagues.PUT("/meets/:meetId/events/:eventId", eventHandler.UpdateEvent)
+		leagues.DELETE("/meets/:meetId/events/:eventId", eventHandler.DeleteEvent)
+
+		// Times (nested under events)
+		leagues.GET("/meets/:meetId/events/:eventId/times", timeHandler.ListTimes)
+		leagues.POST("/meets/:meetId/events/:eventId/times", timeHandler.CreateTime)
+		leagues.GET("/meets/:meetId/events/:eventId/times/:timeId", timeHandler.GetTime)
+		leagues.PUT("/meets/:meetId/events/:eventId/times/:timeId", timeHandler.UpdateTime)
+		leagues.DELETE("/meets/:meetId/events/:eventId/times/:timeId", timeHandler.DeleteTime)
 	}
 
 	log.Printf("LapLogger backend starting on :%s", cfg.BackendPort)

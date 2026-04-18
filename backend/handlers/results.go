@@ -122,7 +122,6 @@ func (h *ResultsHandler) GetPublicResults(c *gin.Context) {
 	defer func() { _ = eventRows.Close() }()
 
 	var events []publicEventResult
-	var eventIDs []string
 	for eventRows.Next() {
 		var e publicEventResult
 		if err := eventRows.Scan(&e.ID, &e.Stroke, &e.Distance, &e.Unit, &e.Gender,
@@ -133,7 +132,6 @@ func (h *ResultsHandler) GetPublicResults(c *gin.Context) {
 		}
 		e.Times = []publicTimeResult{}
 		events = append(events, e)
-		eventIDs = append(eventIDs, e.ID)
 	}
 	if err := eventRows.Err(); err != nil {
 		log.Printf("Event rows error: %v", err)

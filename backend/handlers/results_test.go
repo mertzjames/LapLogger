@@ -86,10 +86,9 @@ func TestGetPublicResults_ValidUUIDAccepted(t *testing.T) {
 
 	// Expect a panic from nil DB access — this confirms validation passed
 	defer func() {
-		if r := recover(); r != nil {
-			// Expected: nil pointer dereference on controlDB.GetLeagueBySlug
-			// This proves the UUID validation passed (didn't return 400)
-		}
+		// Expected: nil pointer dereference on controlDB.GetLeagueBySlug
+		// This proves the UUID validation passed (didn't return 400)
+		_ = recover()
 	}()
 	r.ServeHTTP(w, req)
 

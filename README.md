@@ -93,7 +93,9 @@ See [docs/developer-guide.md](docs/developer-guide.md) for detailed setup instru
 |---|---|
 | [Architecture](docs/architecture.md) | System design, data model, tenant isolation |
 | [Developer Guide](docs/developer-guide.md) | Local setup, project structure, testing, conventions |
-| [API Reference](docs/api-reference.md) | All REST endpoints (auth, leagues, health) |
+| [API Reference](docs/api-reference.md) | All REST endpoints (auth, leagues, CRUD, public results) |
+| [User Guide](docs/user-guide.md) | End-user walkthrough of the application |
+| [Public API](docs/public-api.md) | Guide for embedding or linking public results |
 | [QA Reports](docs/qa/) | QA gate reports for each phase |
 | [Security Reports](docs/security/) | Security review reports |
 
@@ -102,7 +104,8 @@ See [docs/developer-guide.md](docs/developer-guide.md) for detailed setup instru
 | Component | Technology |
 |---|---|
 | Backend | Go 1.22+, Gin framework |
-| Frontend | React, TypeScript, Vite |
+| Frontend | React 19, TypeScript 6, Vite 8 |
+| Routing | react-router-dom 7 |
 | Database | PostgreSQL 16 |
 | Auth | Google OAuth 2.0, JWT (HS256) |
 | Migrations | golang-migrate (embedded SQL) |

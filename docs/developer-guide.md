@@ -125,18 +125,39 @@ LapLogger/
 │
 ├── frontend/
 │   ├── package.json
+│   ├── vite.config.ts        # Vite config with API proxy
+│   ├── tsconfig.json         # TypeScript configuration
+│   ├── index.html            # HTML entry point
 │   ├── src/
-│   │   ├── App.js
-│   │   ├── index.js
-│   │   ├── components/       # React components
-│   │   ├── contexts/         # React context providers
-│   │   └── services/         # API service layer
+│   │   ├── App.tsx           # Root component with route definitions
+│   │   ├── App.css           # Application styles (layout, forms, tables)
+│   │   ├── index.css         # CSS variables and base typography
+│   │   ├── main.tsx          # React DOM entry point
+│   │   ├── types.ts          # Shared interfaces and utility functions
+│   │   ├── components/
+│   │   │   ├── Layout.tsx        # Navbar + Outlet wrapper
+│   │   │   ├── PrivateRoute.tsx  # Auth guard (redirects to /login)
+│   │   │   ├── Login.tsx         # Google OAuth sign-in
+│   │   │   ├── LeagueSelect.tsx  # League picker + create form
+│   │   │   ├── Dashboard.tsx     # League stats + recent meets
+│   │   │   ├── Teams.tsx         # Team CRUD
+│   │   │   ├── Swimmers.tsx      # Swimmer CRUD with team filter
+│   │   │   ├── Meets.tsx         # Meet CRUD with public toggle
+│   │   │   ├── Events.tsx        # Event CRUD (stroke/distance/age)
+│   │   │   ├── TimeEntry.tsx     # Time recording per event
+│   │   │   └── PublicResults.tsx # Unauthenticated results view
+│   │   ├── contexts/
+│   │   │   └── AuthContext.tsx   # Auth state, JWT storage, Google OAuth
+│   │   └── services/
+│   │       └── api.ts            # Typed fetch wrapper with JWT header
 │   └── public/
 │
 └── docs/
     ├── architecture.md       # System design and data model
     ├── developer-guide.md    # This file
     ├── api-reference.md      # REST API documentation
+    ├── public-api.md         # Public results API guide
+    ├── user-guide.md         # End-user walkthrough
     ├── qa/                   # QA gate reports
     └── security/             # Security review reports
 ```
@@ -191,22 +212,15 @@ go test ./database/...
 go test -v ./...
 ```
 
-### Test Organization
-
-| File Pattern | Purpose |
-|---|---|
-| `*_test.go` | Unit tests — functional correctness |
-| `*_security_test.go` | Security tests — injection, bypass, boundary checks |
-
-Current test inventory (54 tests):
+Current test inventory (160 tests):
 
 | Package | Tests | Coverage |
 |---|---|---|
 | `config` | 4 | 100% |
 | `database` | 9 (5 unit + 4 security) | 5.1% |
-| `handlers` | 15 (8 unit + 7 security) | 15.6% |
+| `handlers` | 121 (87 unit + 34 security) | ~40% |
 | `middleware` | 18 (10 unit + 8 security) | 46% |
-| `models` | 7+ | — |
+| `models` | 8 | — |
 
 ## Static Analysis
 
@@ -265,3 +279,111 @@ Run as part of every QA gate.
 4. Create an **OAuth 2.0 Client ID** (Web application)
 5. Add authorized redirect URI: `http://localhost/api/auth/google/callback`
 6. Copy the Client ID and Client Secret into your `.env` file
+
+---
+
+## Frontend Development
+
+### Tech Stack
+
+- **React** 19.x with TypeScript 6.x
+- **Vite** 8.x for bundling and dev server
+- **react-router-dom** 7.x for client-side routing
+- **Native CSS** with CSS variables (no CSS-in-JS or preprocessor)
+
+### Starting the Dev Server
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Vite starts at `http://localhost:5173`. API requests to `/api` are proxied to `http://localhost:8080` (configured in `vite.config.ts`).
+
+### Building for Production
+
+```bash
+cd frontend
+npm run build
+```
+
+Output goes to `frontend/dist/`. The build is served by nginx in production.
+
+### Linting & Type Checking
+
+```bash
+# ESLint (zero warnings enforced)
+cd frontend
+npx eslint . --max-warnings 0
+
+# TypeScript type check (no emit)
+npx tsc -b
+```
+
+### Component Architecture
+
+The frontend uses a simple flat component structure — all page components live in `src/components/`.
+
+**Routing hierarchy** (defined in `App.tsx`):
+
+```
+/login                                    → Login (public)
+/results/:leagueSlug/meets/:meetId        → PublicResults (public)
+/                                         → PrivateRoute > Layout > LeagueSelect
+/leagues/:leagueId                        → PrivateRoute > Layout > Dashboard
+/leagues/:leagueId/teams                  → PrivateRoute > Layout > Teams
+/leagues/:leagueId/swimmers               → PrivateRoute > Layout > Swimmers
+/leagues/:leagueId/meets                  → PrivateRoute > Layout > Meets
+/leagues/:leagueId/meets/:meetId/events   → PrivateRoute > Layout > Events
+/leagues/:leagueId/.../events/:eventId/times → PrivateRoute > Layout > TimeEntry
+```
+
+**Key patterns:**
+- `PrivateRoute` checks auth state and redirects to `/login` if unauthenticated
+- `Layout` provides the navbar and renders child routes via `<Outlet />`
+- All league-scoped routes use `useParams()` to extract `leagueId`
+- CRUD components follow a consistent pattern: list + inline form + edit/delete
+
+### State Management
+
+- **Auth state**: `AuthContext` provides `user`, `loading`, `login()`, `logout()` via React Context
+- **Component state**: Each page component manages its own data with `useState` + `useEffect`
+- **No global state library** — the app is simple enough that Context + local state suffices
+
+### Auth Flow
+
+1. User clicks "Sign in with Google" → `login()` redirects to `/api/auth/google`
+2. Google OAuth completes → backend redirects to `/?token=<jwt>`
+3. `AuthContext` extracts token from URL, stores in `sessionStorage`, cleans URL
+4. `AuthContext` calls `GET /api/me` with the JWT to fetch user profile
+5. On logout: `sessionStorage` is cleared, user redirected to `/login`
+
+### API Service Layer
+
+`services/api.ts` provides a typed fetch wrapper:
+
+```typescript
+import { getTeams, createTeam, updateTeam, deleteTeam } from '../services/api';
+```
+
+- Automatically attaches `Authorization: Bearer <token>` header
+- Handles JSON serialization/deserialization
+- Throws `ApiError` with `status` code on non-OK responses
+- Separate functions for each API operation (e.g., `getSwimmers`, `createSwimmer`)
+
+### Types
+
+`types.ts` defines all shared interfaces matching the backend API responses:
+
+- `User`, `League`, `Team`, `Swimmer`, `Meet`, `SwimEvent`, `TimeEntry`
+- `PublicTimeResult`, `PublicEventResult`, `PublicMeetResult` (for public results)
+- `formatTime(hundredths)` — converts `6523` to `"1:05.23"`
+- `parseTime(input)` — converts `"1:05.23"` to `6523` (returns `null` on invalid input)
+
+### CSS Organization
+
+- `index.css` — CSS custom properties (colors, spacing) and base typography
+- `App.css` — All component styles using native CSS nesting
+- Light/dark mode via `prefers-color-scheme` media query
+- Responsive breakpoint at 768px for mobile layout

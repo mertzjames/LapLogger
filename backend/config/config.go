@@ -12,6 +12,7 @@ type Config struct {
 	GoogleClientID     string
 	GoogleClientSecret string
 	GoogleRedirectURI  string
+	FrontendURL        string
 
 	JWTSecret string
 
@@ -28,6 +29,7 @@ func Load() *Config {
 		GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		GoogleRedirectURI:  os.Getenv("GOOGLE_REDIRECT_URI"),
+		FrontendURL:        getEnv("FRONTEND_URL", "http://localhost:5173"),
 		JWTSecret:          getEnv("JWT_SECRET", "dev-secret-change-in-production"),
 		BackendPort:        getEnv("BACKEND_PORT", "8080"),
 	}

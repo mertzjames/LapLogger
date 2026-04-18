@@ -17,9 +17,10 @@ import (
 
 // AuthHandler handles Google OAuth login and JWT issuance.
 type AuthHandler struct {
-	oauthCfg  *oauth2.Config
-	jwtSecret []byte
-	controlDB *database.ControlDB
+	oauthCfg    *oauth2.Config
+	jwtSecret   []byte
+	controlDB   *database.ControlDB
+	frontendURL string
 }
 
 // NewAuthHandler creates a new AuthHandler.
@@ -32,8 +33,9 @@ func NewAuthHandler(cfg *config.Config, controlDB *database.ControlDB) *AuthHand
 			Scopes:       []string{"openid", "email", "profile"},
 			Endpoint:     google.Endpoint,
 		},
-		jwtSecret: []byte(cfg.JWTSecret),
-		controlDB: controlDB,
+		jwtSecret:   []byte(cfg.JWTSecret),
+		controlDB:   controlDB,
+		frontendURL: cfg.FrontendURL,
 	}
 }
 
@@ -100,8 +102,8 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	}
 
 	// Redirect to frontend with token as query param
-	frontendURL := fmt.Sprintf("/?token=%s", jwtToken)
-	c.Redirect(http.StatusTemporaryRedirect, frontendURL)
+	redirectURL := fmt.Sprintf("%s/?token=%s", h.frontendURL, jwtToken)
+	c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
 
 // GetMe returns the current authenticated user's info.

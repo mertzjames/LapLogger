@@ -166,26 +166,28 @@ League (tenant) ──► Teams ──► Swimmers
 - Update `docs/api-reference.md` with full CRUD endpoints (teams, swimmers, meets, events, times) ✅
 - Update `docs/developer-guide.md` with new handler patterns and testing instructions ✅
 
-### Phase 5 — Public Results _(agent: `backend-go`)_
-21. `handlers/results.go` — `GET /public/:leagueSlug/meets/:meetId` — returns structured results if `is_public=true`
+### Phase 5 — Public Results _(agent: `backend-go`)_ ✅
+21. `handlers/results.go` — `GET /public/:leagueSlug/meets/:meetId` — returns structured results if `is_public=true` ✅
 
-### QA-5 — QA Gate: Post-Phase 5 _(agent: `qa`)_
-- `go vet ./...`
-- `golangci-lint run ./...`
-- `go test ./... -coverprofile=coverage.out`
-- Review: public results handler, auth bypass safety, tenant isolation
-- Confirm: all Phase 5 acceptance criteria met
+### QA-5 — QA Gate: Post-Phase 5 _(agent: `qa`)_ ✅
+- `go vet ./...` — 0 warnings ✅
+- `golangci-lint run ./...` — 0 issues ✅
+- `go test ./... -count=1` — all pass (160 tests) ✅
+- Review: public results handler, auth bypass safety, tenant isolation ✅
+- Confirm: all Phase 5 acceptance criteria met ✅
+- Report: `docs/qa/QA-5-post-phase5.md` ✅
 
-### SEC-3 — Security Review: Post-Phase 5 _(agent: `security`)_
-- Audit public results endpoint: ensure only `is_public=true` meets are exposed
-- Audit auth bypass: verify no authenticated data leaks through public routes
-- Audit information disclosure: error messages, stack traces, internal IDs in public responses
-- Add security tests for: accessing private meets via public URL, slug enumeration
-- Produce `docs/security/SEC-3-report.md`
+### SEC-3 — Security Review: Post-Phase 5 _(agent: `security`)_ ✅
+- Audit public results endpoint: ensure only `is_public=true` meets are exposed ✅
+- Audit auth bypass: verify no authenticated data leaks through public routes ✅
+- Audit information disclosure: error messages, stack traces, internal IDs in public responses ✅
+- Add security tests for: accessing private meets via public URL, slug enumeration ✅
+- Produce `docs/security/SEC-3-report.md` ✅
+- Findings: 0 CRITICAL, 0 HIGH, 1 MEDIUM (unbounded result set), 1 LOW (slug enumeration)
 
-### DOC-3 — Documentation: Post-Phase 5 _(agent: `docs`)_
-- Update `docs/api-reference.md` with public results endpoint
-- Add `docs/public-api.md` — guide for embedding or linking public results pages
+### DOC-3 — Documentation: Post-Phase 5 _(agent: `docs`)_ ✅
+- Update `docs/api-reference.md` with public results endpoint ✅
+- Add `docs/public-api.md` — guide for embedding or linking public results pages ✅
 
 ### Phase 6 — Frontend _(agent: `frontend`)_
 21. Set up React Router v6 routes

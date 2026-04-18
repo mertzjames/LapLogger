@@ -446,6 +446,87 @@ Deletes a time entry. **Response** `204 No Content`.
 
 ---
 
+## Public Results
+
+Public results endpoints are **unauthenticated** — no JWT required. They use the league's URL slug instead of its UUID.
+
+### `GET /api/public/:leagueSlug/meets/:meetId`
+
+Returns structured results for a public meet. Only meets with `is_public=true` are accessible. Private meets return `404` (indistinguishable from non-existent meets).
+
+**Path Parameters**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `leagueSlug` | string | The league's URL-safe slug (e.g., `metro-swim-league`) |
+| `meetId` | string (UUID) | The meet's unique identifier |
+
+**Response** `200 OK`
+
+```json
+{
+  "meet_id": "550e8400-e29b-41d4-a716-446655440000",
+  "meet_name": "Spring Invitational 2026",
+  "location": "Aquatic Center",
+  "meet_date": "2026-04-20",
+  "league_name": "Metro Swim League",
+  "events": [
+    {
+      "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "stroke": "Free",
+      "distance": 100,
+      "unit": "yards",
+      "gender": "F",
+      "age_group": "11-12",
+      "is_custom": false,
+      "sort_order": 1,
+      "times": [
+        {
+          "swimmer_name": "Jane Doe",
+          "team_name": "Sharks",
+          "time_hundredths": 6523,
+          "is_exhibition": false
+        },
+        {
+          "swimmer_name": "Emily Smith",
+          "team_name": "Dolphins",
+          "time_hundredths": 6801,
+          "is_exhibition": false
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Response Fields**
+
+| Field | Type | Description |
+|---|---|---|
+| `meet_id` | string | Meet UUID |
+| `meet_name` | string | Meet name |
+| `location` | string | Meet location |
+| `meet_date` | string | Meet date |
+| `league_name` | string | Name of the league hosting the meet |
+| `events` | array | List of events, ordered by `sort_order` then `created_at` |
+| `events[].times` | array | Times for the event, ordered by non-exhibition first, then fastest first |
+| `events[].times[].swimmer_name` | string | Full name (`first_name + last_name`) |
+| `events[].times[].team_name` | string | Team name (empty string if swimmer has no team) |
+| `events[].times[].time_hundredths` | int | Time in hundredths of a second (e.g., 6523 = 1:05.23) |
+| `events[].times[].is_exhibition` | bool | Whether the entry is exhibition (non-scoring) |
+
+**Error Responses**
+
+| Status | Body | Condition |
+|---|---|---|
+| 400 | `{"error": "missing league slug"}` | Empty `:leagueSlug` parameter |
+| 400 | `{"error": "invalid meet id"}` | `:meetId` is not a valid UUID |
+| 404 | `{"error": "league not found"}` | No league with this slug |
+| 404 | `{"error": "meet not found"}` | Meet doesn't exist **or** `is_public=false` |
+| 500 | `{"error": "..."}` | Internal server error |
+
+---
+
 ## Common Validation Errors
 
 All CRUD endpoints return `400 Bad Request` for:
